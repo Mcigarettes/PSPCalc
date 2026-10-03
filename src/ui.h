@@ -3,17 +3,15 @@
 
 /*
  * v0.3.0: ui.h is now the UI layer aggregation header.
+ * v0.3.1: adds ui_button.h.
  *
- * It does NOT define anything itself.
- * It just pulls in the UI submodules, so main.c only needs:
+ * main.c only needs:
  *
  *     #include "ui.h"
- *
- * When new UI modules are added (button, label, panel, ...),
- * include them here.
  */
 
 #include "ui_element.h"
+#include "ui_button.h"
 #include "ui_container.h"
 
 #endif

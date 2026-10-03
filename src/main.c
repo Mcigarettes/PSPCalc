@@ -35,32 +35,26 @@ static unsigned int __attribute__((aligned(16))) list[262144];
  */
 static volatile int running = 1;
 
-/* v0.2.4: activation feedback */
-static int activated_index = -1;
-static int activated_frames = 0;
-
 /* v0.2.5: cursor mode + hover hit test */
 static int cursor_mode = 0;
 static int hovered_index = -1;
 
 /*
- * v0.2.6: test UI elements
- * v0.2.7: focus state owned by UIContainer
+ * v0.3.1: test UI buttons.
+ *
+ * element_ptrs exists because UIButton is larger than UIElement,
+ * so the array of buttons cannot be handed to UIContainer as
+ * a contiguous UIElement array.
  */
 #define ELEMENT_COUNT 6
 #define ELEMENT_COLS  3
 
-static UIElement elements[ELEMENT_COUNT];
+static UIButton buttons[ELEMENT_COUNT];
+static UIElement *element_ptrs[ELEMENT_COUNT];
 
 static UIContainer container;
 
-static void on_element_activate(UIElement *element)
-{
-    activated_index = element->id;
-    activated_frames = 15;
-}
-
-static void init_elements(void)
+static void init_buttons(void)
 {
     int positions[ELEMENT_COUNT][2] = {
         { 100,  80 },
@@ -73,21 +67,16 @@ static void init_elements(void)
 
     for (int i = 0; i < ELEMENT_COUNT; i++)
     {
-        elements[i].x = positions[i][0];
-        elements[i].y = positions[i][1];
-        elements[i].width = 60;
-        elements[i].height = 40;
+        ui_button_init(
+            &buttons[i],
+            positions[i][0],
+            positions[i][1],
+            60,
+            40,
+            i
+        );
 
-        elements[i].id = i;
-        elements[i].enabled = 1;
-        elements[i].focused = 0;
-
-        elements[i].normal_color = 0xFF30405A;
-        elements[i].focused_color = 0xFF8060FF;
-        elements[i].activated_color = 0xFF00FF00;
-
-        elements[i].on_activate = on_element_activate;
-        elements[i].user_data = NULL;
+        element_ptrs[i] = &buttons[i].base;
     }
 }
 
@@ -295,11 +284,11 @@ int main(void)
 
     input_init();
 
-    init_elements();
+    init_buttons();
 
     ui_container_init(
         &container,
-        elements,
+        element_ptrs,
         ELEMENT_COUNT,
         ELEMENT_COLS
     );
@@ -316,7 +305,7 @@ int main(void)
         }
 
         /*
-         * v0.2.7: Focus navigation delegated to UIContainer.
+         * Focus navigation via UIContainer.
          */
         if (event.type == UI_EVENT_UP)
         {
@@ -340,6 +329,10 @@ int main(void)
         }
         else if (event.type == UI_EVENT_ACTIVATE)
         {
+            /*
+             * v0.3.1: activate through UIButton; button owns its
+             * own pressed-state visual feedback.
+             */
             int target;
 
             if (cursor_mode && hovered_index >= 0)
@@ -353,12 +346,12 @@ int main(void)
 
             if (target >= 0 && target < ELEMENT_COUNT)
             {
-                ui_element_activate(&elements[target]);
+                ui_button_activate(&buttons[target]);
             }
         }
 
         /*
-         * v0.2.5: analog switches to cursor mode
+         * v0.2.5: analog switches to cursor mode.
          */
         if (event.cursor_moved)
         {
@@ -366,16 +359,18 @@ int main(void)
         }
 
         /*
-         * v0.2.5: hit test cursor against elements
+         * v0.2.5: hit test cursor against buttons.
          */
         hovered_index = -1;
 
         for (int i = 0; i < ELEMENT_COUNT; i++)
         {
-            if (event.cursor_x >= elements[i].x &&
-                event.cursor_x <  elements[i].x + elements[i].width &&
-                event.cursor_y >= elements[i].y &&
-                event.cursor_y <  elements[i].y + elements[i].height)
+            UIElement *e = &buttons[i].base;
+
+            if (event.cursor_x >= e->x &&
+                event.cursor_x <  e->x + e->width &&
+                event.cursor_y >= e->y &&
+                event.cursor_y <  e->y + e->height)
             {
                 hovered_index = i;
                 break;
@@ -383,16 +378,11 @@ int main(void)
         }
 
         /*
-         * v0.2.4: tick activation flash timer
+         * v0.3.1: tick button press timers.
          */
-        if (activated_frames > 0)
+        for (int i = 0; i < ELEMENT_COUNT; i++)
         {
-            activated_frames--;
-
-            if (activated_frames == 0)
-            {
-                activated_index = -1;
-            }
+            ui_button_update(&buttons[i]);
         }
 
         /*
@@ -412,7 +402,7 @@ int main(void)
         );
 
         /*
-         * v0.2.7: active element
+         * v0.2.7: active element.
          */
         int active_index;
 
@@ -427,25 +417,15 @@ int main(void)
 
         for (int i = 0; i < ELEMENT_COUNT; i++)
         {
-            elements[i].focused = (i == active_index);
+            buttons[i].base.focused = (i == active_index);
         }
 
+        /*
+         * v0.3.1: draw each button through ui_button_draw.
+         */
         for (int i = 0; i < ELEMENT_COUNT; i++)
         {
-            if (i == activated_index)
-            {
-                draw_rectangle(
-                    elements[i].x,
-                    elements[i].y,
-                    elements[i].width,
-                    elements[i].height,
-                    elements[i].activated_color
-                );
-            }
-            else
-            {
-                ui_element_draw(&elements[i]);
-            }
+            ui_button_draw(&buttons[i]);
         }
 
         /*

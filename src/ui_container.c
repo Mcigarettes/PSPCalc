@@ -4,7 +4,7 @@
 
 void ui_container_init(
     UIContainer *container,
-    UIElement *elements,
+    UIElement **elements,
     int count,
     int cols
 )
@@ -43,7 +43,7 @@ UIElement *ui_container_get_focused(UIContainer *container)
         return NULL;
     }
 
-    return &container->elements[container->focus_index];
+    return container->elements[container->focus_index];
 }
 
 void ui_container_move_focus(

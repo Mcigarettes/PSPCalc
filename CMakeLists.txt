@@ -6,6 +6,7 @@ add_executable(${PROJECT_NAME}
     src/main.c
     src/input.c
     src/ui_element.c
+    src/ui_button.c
     src/ui_container.c
 )
 
