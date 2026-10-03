@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "input.h"
+#include "ui.h"
 
 /*
  * PSP application information
@@ -21,7 +22,6 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
 /*
  * GU framebuffer width.
- * PSP VRAM is normally arranged with a 512-pixel buffer width.
  */
 #define BUFFER_WIDTH 512
 
@@ -41,17 +41,52 @@ static int activated_index = -1;
 static int activated_frames = 0;
 
 /* v0.2.5: cursor mode + hover hit test */
-static int cursor_mode = 0;      /* 1 = last input was analog cursor */
-static int hovered_index = -1;   /* element under cursor, or -1 */
+static int cursor_mode = 0;
+static int hovered_index = -1;
 
 /*
- * Test button layout (shared by hit test and drawing)
+ * v0.2.6: test UI elements
  */
-static const int button_x[6] = { 100, 200, 300, 100, 200, 300 };
-static const int button_y[6] = {  80,  80,  80, 160, 160, 160 };
-static const int button_w = 60;
-static const int button_h = 40;
-static const int button_count = 6;
+#define ELEMENT_COUNT 6
+
+static UIElement elements[ELEMENT_COUNT];
+
+static void on_element_activate(UIElement *element)
+{
+    activated_index = element->id;
+    activated_frames = 15;
+}
+
+static void init_elements(void)
+{
+    int positions[ELEMENT_COUNT][2] = {
+        { 100,  80 },
+        { 200,  80 },
+        { 300,  80 },
+        { 100, 160 },
+        { 200, 160 },
+        { 300, 160 }
+    };
+
+    for (int i = 0; i < ELEMENT_COUNT; i++)
+    {
+        elements[i].x = positions[i][0];
+        elements[i].y = positions[i][1];
+        elements[i].width = 60;
+        elements[i].height = 40;
+
+        elements[i].id = i;
+        elements[i].enabled = 1;
+        elements[i].focused = 0;
+
+        elements[i].normal_color = 0xFF30405A;
+        elements[i].focused_color = 0xFF8060FF;
+        elements[i].activated_color = 0xFF00FF00;
+
+        elements[i].on_activate = on_element_activate;
+        elements[i].user_data = NULL;
+    }
+}
 
 /*
  * ---------------------------------------------------------
@@ -158,9 +193,6 @@ static void init_gu(void)
         BUFFER_WIDTH
     );
 
-    /*
-     * Set up a 480x272 coordinate system.
-     */
     sceGuOffset(
         2048 - SCREEN_WIDTH / 2,
         2048 - SCREEN_HEIGHT / 2
@@ -203,7 +235,7 @@ static void init_gu(void)
 
 /*
  * ---------------------------------------------------------
- * Draw rectangle
+ * Draw rectangle (background / panel / cursor)
  * ---------------------------------------------------------
  */
 
@@ -225,9 +257,7 @@ static void draw_rectangle(
 {
     Vertex *vertices;
 
-    vertices = (Vertex *)sceGuGetMemory(
-        2 * sizeof(Vertex)
-    );
+    vertices = (Vertex *)sceGuGetMemory(2 * sizeof(Vertex));
 
     vertices[0].color = color;
     vertices[0].x = x;
@@ -262,25 +292,21 @@ int main(void)
 
     input_init();
 
-    /*
-     * Initialize graphics.
-     */
+    init_elements();
+
     init_gu();
 
     while (running)
     {
         UIEvent event = input_update();
 
-        /*
-         * Exit
-         */
         if (event.type == UI_EVENT_EXIT)
         {
             running = 0;
         }
 
         /*
-         * Focus navigation (v0.2.3) + activate (v0.2.4/v0.2.5)
+         * Focus navigation (v0.2.3)
          */
         if (event.type == UI_EVENT_UP)
         {
@@ -316,7 +342,10 @@ int main(void)
         }
         else if (event.type == UI_EVENT_ACTIVATE)
         {
-            /* v0.2.5: unified activation */
+            /*
+             * v0.2.5: unified activation
+             * v0.2.6: route through UIElement
+             */
             int target;
 
             if (cursor_mode && hovered_index >= 0)
@@ -328,12 +357,14 @@ int main(void)
                 target = focus_index;
             }
 
-            activated_index = target;
-            activated_frames = 15;
+            if (target >= 0 && target < ELEMENT_COUNT)
+            {
+                ui_element_activate(&elements[target]);
+            }
         }
 
         /*
-         * v0.2.5: analog stick switches active input to cursor mode
+         * v0.2.5: analog switches to cursor mode
          */
         if (event.cursor_moved)
         {
@@ -341,16 +372,16 @@ int main(void)
         }
 
         /*
-         * v0.2.5: hit test cursor against buttons
+         * v0.2.5: hit test cursor against elements
          */
         hovered_index = -1;
 
-        for (int i = 0; i < button_count; i++)
+        for (int i = 0; i < ELEMENT_COUNT; i++)
         {
-            if (event.cursor_x >= button_x[i] &&
-                event.cursor_x <  button_x[i] + button_w &&
-                event.cursor_y >= button_y[i] &&
-                event.cursor_y <  button_y[i] + button_h)
+            if (event.cursor_x >= elements[i].x &&
+                event.cursor_x <  elements[i].x + elements[i].width &&
+                event.cursor_y >= elements[i].y &&
+                event.cursor_y <  elements[i].y + elements[i].height)
             {
                 hovered_index = i;
                 break;
@@ -373,28 +404,11 @@ int main(void)
         /*
          * Start a new frame.
          */
-        sceGuStart(
-            GU_DIRECT,
-            list
-        );
+        sceGuStart(GU_DIRECT, list);
 
-        /*
-         * Background.
-         *
-         * RGBA:
-         * 0xFF101828
-         */
-        sceGuClearColor(
-            0xFF101828
-        );
+        sceGuClearColor(0xFF101828);
+        sceGuClear(GU_COLOR_BUFFER_BIT);
 
-        sceGuClear(
-            GU_COLOR_BUFFER_BIT
-        );
-
-        /*
-         * Draw a test panel.
-         */
         draw_rectangle(
             40,
             35,
@@ -404,7 +418,7 @@ int main(void)
         );
 
         /*
-         * v0.2.5: active element = hovered (cursor mode) or focused (d-pad mode)
+         * v0.2.6: active element
          */
         int active_index;
 
@@ -417,30 +431,27 @@ int main(void)
             active_index = focus_index;
         }
 
-        for (int i = 0; i < button_count; i++)
+        for (int i = 0; i < ELEMENT_COUNT; i++)
         {
-            unsigned int button_color;
+            elements[i].focused = (i == active_index);
+        }
 
+        for (int i = 0; i < ELEMENT_COUNT; i++)
+        {
             if (i == activated_index)
             {
-                button_color = 0xFF00FF00;   /* activated: green flash */
-            }
-            else if (i == active_index)
-            {
-                button_color = 0xFF8060FF;   /* active: purple */
+                draw_rectangle(
+                    elements[i].x,
+                    elements[i].y,
+                    elements[i].width,
+                    elements[i].height,
+                    elements[i].activated_color
+                );
             }
             else
             {
-                button_color = 0xFF30405A;   /* normal */
+                ui_element_draw(&elements[i]);
             }
-
-            draw_rectangle(
-                button_x[i],
-                button_y[i],
-                button_w,
-                button_h,
-                button_color
-            );
         }
 
         /*
@@ -475,14 +486,8 @@ int main(void)
             GU_SYNC_WHAT_DONE
         );
 
-        /*
-         * Wait for vertical blank.
-         */
         sceDisplayWaitVblankStart();
 
-        /*
-         * Swap buffers.
-         */
         sceGuSwapBuffers();
     }
 
