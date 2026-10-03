@@ -23,7 +23,8 @@ PSPCalc is designed specifically for the PSP's 480×272 display and controller i
 * Automatic Focus layout
 * Cursor hit testing
 * Input / UI decoupling
-
+* 从v0.4.x之后此rdmap作废，功能有变化
+  
 ### v0.4.x — Calculator UI
 
 * Calculator layout
