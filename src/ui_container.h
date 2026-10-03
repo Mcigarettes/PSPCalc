@@ -9,6 +9,8 @@
  * v0.3.1: elements is now UIElement ** (array of pointers).
  * v0.3.4: cols field removed. Focus navigation is now
  *         geometric (based on element centers), not grid-based.
+ * v0.3.5: adds ui_container_hit_test(), moving the cursor
+ *         hit-test loop out of main.c and into the container.
  *
  * UIContainer owns:
  *   - a pointer to an array of UIElement *
@@ -18,7 +20,7 @@
  *   - the elements themselves
  *   - input handling
  *   - rendering
- *   - cursor / mouse-style interaction
+ *   - cursor movement (only hit-testing against its elements)
  *
  * UIDirection is a UI-layer concept, deliberately NOT UIEventType,
  * so the UI layer never depends on the input layer.
@@ -52,6 +54,16 @@ UIElement *ui_container_get_focused(UIContainer *container);
 void ui_container_move_focus(
     UIContainer *container,
     UIDirection direction
+);
+
+/*
+ * v0.3.5: return the index of the enabled element containing (x, y),
+ * or -1 if none. First match wins (elements are assumed non-overlapping).
+ */
+int ui_container_hit_test(
+    const UIContainer *container,
+    int x,
+    int y
 );
 
 #endif

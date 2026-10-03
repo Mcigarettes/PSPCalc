@@ -44,6 +44,7 @@ static int hovered_index = -1;
  * v0.3.2: buttons carry text; a title UILabel is drawn.
  * v0.3.3: background rect replaced by UIPanel.
  * v0.3.4: focus navigation is geometric; no grid cols.
+ * v0.3.5: cursor hit test delegated to UIContainer.
  */
 #define ELEMENT_COUNT 6
 
@@ -389,21 +390,14 @@ int main(void)
             cursor_mode = 1;
         }
 
-        hovered_index = -1;
-
-        for (int i = 0; i < ELEMENT_COUNT; i++)
-        {
-            UIElement *e = &buttons[i].base;
-
-            if (event.cursor_x >= e->x &&
-                event.cursor_x <  e->x + e->width &&
-                event.cursor_y >= e->y &&
-                event.cursor_y <  e->y + e->height)
-            {
-                hovered_index = i;
-                break;
-            }
-        }
+        /*
+         * v0.3.5: cursor hit test delegated to UIContainer.
+         */
+        hovered_index = ui_container_hit_test(
+            &container,
+            (int)event.cursor_x,
+            (int)event.cursor_y
+        );
 
         for (int i = 0; i < ELEMENT_COUNT; i++)
         {

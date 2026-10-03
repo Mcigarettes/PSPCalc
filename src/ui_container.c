@@ -166,3 +166,38 @@ void ui_container_move_focus(
         container->focus_index = best_index;
     }
 }
+
+/*
+ * v0.3.5: cursor hit test against container elements.
+ */
+int ui_container_hit_test(
+    const UIContainer *container,
+    int x,
+    int y
+)
+{
+    if (!container || container->count <= 0)
+    {
+        return -1;
+    }
+
+    for (int i = 0; i < container->count; i++)
+    {
+        const UIElement *e = container->elements[i];
+
+        if (!e || !e->enabled)
+        {
+            continue;
+        }
+
+        if (x >= e->x &&
+            x <  e->x + e->width &&
+            y >= e->y &&
+            y <  e->y + e->height)
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
