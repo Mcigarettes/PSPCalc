@@ -1,26 +1,12 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-typedef enum
-{
-    UI_EVENT_NONE = 0,
-    UI_EVENT_MOVE,
-    UI_EVENT_ACTIVATE,
-    UI_EVENT_BACK,
-    UI_EVENT_EXIT,
-    UI_EVENT_UP,
-    UI_EVENT_DOWN,
-    UI_EVENT_LEFT,
-    UI_EVENT_RIGHT
-} UIEventType;
+#include "event.h"
 
-typedef struct
-{
-    UIEventType type;
-    float cursor_x;
-    float cursor_y;
-    int cursor_moved;   /* v0.2.5: analog stick caused cursor movement this frame */
-} UIEvent;
+/*
+ * v0.3.6: UIEventType / UIEvent moved to event.h.
+ * input.h now only declares the input layer's own API.
+ */
 
 void input_init(void);
 UIEvent input_update(void);

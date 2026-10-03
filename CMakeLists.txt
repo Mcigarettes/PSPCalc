@@ -11,6 +11,7 @@ add_executable(${PROJECT_NAME}
     src/ui_label.c
     src/ui_panel.c
     src/ui_container.c
+    src/ui_system.c
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

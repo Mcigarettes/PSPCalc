@@ -35,23 +35,20 @@ static unsigned int __attribute__((aligned(16))) list[262144];
  */
 static volatile int running = 1;
 
-/* v0.2.5: cursor mode + hover hit test */
-static int cursor_mode = 0;
-static int hovered_index = -1;
-
 /*
  * v0.3.1: test UI buttons
  * v0.3.2: buttons carry text; a title UILabel is drawn.
  * v0.3.3: background rect replaced by UIPanel.
  * v0.3.4: focus navigation is geometric; no grid cols.
  * v0.3.5: cursor hit test delegated to UIContainer.
+ * v0.3.6: cursor / focus / hover state moved into UISystem.
  */
 #define ELEMENT_COUNT 6
 
 static UIButton buttons[ELEMENT_COUNT];
 static UIElement *element_ptrs[ELEMENT_COUNT];
 
-static UIContainer container;
+static UISystem ui;
 
 static UILabel title_label;
 
@@ -329,8 +326,8 @@ int main(void)
     init_labels();
     init_panels();
 
-    ui_container_init(
-        &container,
+    ui_system_init(
+        &ui,
         element_ptrs,
         ELEMENT_COUNT
     );
@@ -346,38 +343,17 @@ int main(void)
             running = 0;
         }
 
-        if (event.type == UI_EVENT_UP)
-        {
-            ui_container_move_focus(&container, UI_DIR_UP);
-            cursor_mode = 0;
-        }
-        else if (event.type == UI_EVENT_DOWN)
-        {
-            ui_container_move_focus(&container, UI_DIR_DOWN);
-            cursor_mode = 0;
-        }
-        else if (event.type == UI_EVENT_LEFT)
-        {
-            ui_container_move_focus(&container, UI_DIR_LEFT);
-            cursor_mode = 0;
-        }
-        else if (event.type == UI_EVENT_RIGHT)
-        {
-            ui_container_move_focus(&container, UI_DIR_RIGHT);
-            cursor_mode = 0;
-        }
-        else if (event.type == UI_EVENT_ACTIVATE)
-        {
-            int target;
+        /*
+         * v0.3.6: all cursor / focus / hover state lives in UISystem.
+         */
+        ui_system_handle_event(&ui, &event);
 
-            if (cursor_mode && hovered_index >= 0)
-            {
-                target = hovered_index;
-            }
-            else
-            {
-                target = ui_container_get_focus_index(&container);
-            }
+        /*
+         * Activation is app-level: query active index, activate it.
+         */
+        if (event.type == UI_EVENT_ACTIVATE)
+        {
+            int target = ui_system_get_active_index(&ui);
 
             if (target >= 0 && target < ELEMENT_COUNT)
             {
@@ -385,48 +361,29 @@ int main(void)
             }
         }
 
-        if (event.cursor_moved)
-        {
-            cursor_mode = 1;
-        }
+        ui_system_update(&ui);
 
-        /*
-         * v0.3.5: cursor hit test delegated to UIContainer.
-         */
-        hovered_index = ui_container_hit_test(
-            &container,
-            (int)event.cursor_x,
-            (int)event.cursor_y
-        );
-
+        /* Tick button press timers */
         for (int i = 0; i < ELEMENT_COUNT; i++)
         {
             ui_button_update(&buttons[i]);
         }
 
+        /* Start a new frame */
         sceGuStart(GU_DIRECT, list);
 
         sceGuClearColor(0xFF101828);
         sceGuClear(GU_COLOR_BUFFER_BIT);
 
         ui_panel_draw(&main_panel);
-
         ui_label_draw(&title_label);
 
-        int active_index;
-
-        if (cursor_mode && hovered_index >= 0)
-        {
-            active_index = hovered_index;
-        }
-        else
-        {
-            active_index = ui_container_get_focus_index(&container);
-        }
+        /* Sync focused flag from UISystem into each button */
+        int active = ui_system_get_active_index(&ui);
 
         for (int i = 0; i < ELEMENT_COUNT; i++)
         {
-            buttons[i].base.focused = (i == active_index);
+            buttons[i].base.focused = (i == active);
         }
 
         for (int i = 0; i < ELEMENT_COUNT; i++)
@@ -434,6 +391,7 @@ int main(void)
             ui_button_draw(&buttons[i]);
         }
 
+        /* Cursor */
         unsigned int cursor_color = 0xFF8060FF;
 
         if (event.type == UI_EVENT_ACTIVATE)
@@ -446,8 +404,8 @@ int main(void)
         }
 
         draw_rectangle(
-            (int)event.cursor_x - 8,
-            (int)event.cursor_y - 8,
+            ui_system_get_cursor_x(&ui) - 8,
+            ui_system_get_cursor_y(&ui) - 8,
             16,
             16,
             cursor_color
