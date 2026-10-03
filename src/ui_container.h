@@ -1,10 +1,12 @@
 #ifndef UI_CONTAINER_H
 #define UI_CONTAINER_H
 
-#include "ui.h"
+#include "ui_element.h"
 
 /*
  * v0.2.7: Focus / Container layer.
+ * v0.3.0: include path changed from ui.h to ui_element.h
+ *         to avoid a circular aggregation dependency.
  *
  * UIContainer owns:
  *   - a pointer to an array of UIElement

@@ -7,7 +7,6 @@
 
 #include "input.h"
 #include "ui.h"
-#include "ui_container.h"
 
 /*
  * PSP application information
@@ -40,13 +39,13 @@ static volatile int running = 1;
 static int activated_index = -1;
 static int activated_frames = 0;
 
-/* v0.2.5: cursor mode + hover hit test (not yet moved into container) */
+/* v0.2.5: cursor mode + hover hit test */
 static int cursor_mode = 0;
 static int hovered_index = -1;
 
 /*
  * v0.2.6: test UI elements
- * v0.2.7: focus state now owned by UIContainer
+ * v0.2.7: focus state owned by UIContainer
  */
 #define ELEMENT_COUNT 6
 #define ELEMENT_COLS  3
@@ -318,9 +317,6 @@ int main(void)
 
         /*
          * v0.2.7: Focus navigation delegated to UIContainer.
-         *
-         * main.c maps input events to UI-layer direction,
-         * so the UI layer stays independent from input layer.
          */
         if (event.type == UI_EVENT_UP)
         {
@@ -344,11 +340,6 @@ int main(void)
         }
         else if (event.type == UI_EVENT_ACTIVATE)
         {
-            /*
-             * v0.2.5: unified activation
-             * v0.2.6: route through UIElement
-             * v0.2.7: focus_index now read from container
-             */
             int target;
 
             if (cursor_mode && hovered_index >= 0)

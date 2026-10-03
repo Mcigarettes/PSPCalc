@@ -1,6 +1,6 @@
 #include <pspgu.h>
 
-#include "ui.h"
+#include "ui_element.h"
 
 typedef struct
 {
