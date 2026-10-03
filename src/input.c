@@ -29,7 +29,7 @@ UIEvent input_update(void)
         1
     );
 
-{
+
     /*
      * Analog stick
      */
@@ -88,7 +88,28 @@ else if ((pad.Buttons & PSP_CTRL_CIRCLE) &&
 {
     event.type = UI_EVENT_BACK;
 }
+else if ((pad.Buttons & PSP_CTRL_UP) &&
+         !(previous_buttons & PSP_CTRL_UP))
+{
+    event.type = UI_EVENT_UP;
+}
+else if ((pad.Buttons & PSP_CTRL_DOWN) &&
+         !(previous_buttons & PSP_CTRL_DOWN))
+{
+    event.type = UI_EVENT_DOWN;
+}
+else if ((pad.Buttons & PSP_CTRL_LEFT) &&
+         !(previous_buttons & PSP_CTRL_LEFT))
+{
+    event.type = UI_EVENT_LEFT;
+}
+else if ((pad.Buttons & PSP_CTRL_RIGHT) &&
+         !(previous_buttons & PSP_CTRL_RIGHT))
+{
+    event.type = UI_EVENT_RIGHT;
+}
 
-previous_buttons = pad.Buttons;}
-    return event;
+previous_buttons = pad.Buttons;
+
+return event;
 }

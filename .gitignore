@@ -2,4 +2,4 @@ build/
 *.o
 *.elf
 *.prx
-*:Zone.Identifier
+*:Zone.Identifier*:Zone.Identifier

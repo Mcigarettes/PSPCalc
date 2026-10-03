@@ -34,7 +34,7 @@ static unsigned int __attribute__((aligned(16))) list[262144];
  * Application state
  */
 static volatile int running = 1;
-
+static int focus_index = 0;
 
 /*
  * ---------------------------------------------------------
@@ -260,7 +260,35 @@ while (running)
     {
         running = 0;
     }
-    
+    if (event.type == UI_EVENT_UP)
+{
+    if (focus_index >= 3)
+    {
+        focus_index -= 3;
+    }
+}
+else if (event.type == UI_EVENT_DOWN)
+{
+    if (focus_index < 3)
+    {
+        focus_index += 3;
+    }
+}
+else if (event.type == UI_EVENT_LEFT)
+{
+    if (focus_index % 3 != 0)
+    {
+        focus_index--;
+    }
+}
+else if (event.type == UI_EVENT_RIGHT)
+{
+    if (focus_index % 3 != 2)
+    {
+        focus_index++;
+    }
+}
+
     /*
      * Handle input events.
      */
@@ -299,6 +327,37 @@ sceGuStart(
             200,
             0xFF18243A
         );
+int button_x[6] = {
+    100, 200, 300,
+    100, 200, 300
+};
+
+int button_y[6] = {
+    80, 80, 80,
+    160, 160, 160
+};
+
+for (int i = 0; i < 6; i++)
+{
+    unsigned int button_color;
+
+    if (i == focus_index)
+    {
+        button_color = 0xFF8060FF;
+    }
+    else
+    {
+        button_color = 0xFF30405A;
+    }
+
+    draw_rectangle(
+        button_x[i],
+        button_y[i],
+        60,
+        40,
+        button_color
+    );
+}
 
         /*
          * Draw the cursor.
