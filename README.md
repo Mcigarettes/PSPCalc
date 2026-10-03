@@ -8,11 +8,11 @@ PSPCalc is designed specifically for the PSP's 480×272 display and controller i
 
 ### v0.2.x — Input & Interaction
 
-* [x] D-pad Focus navigation
-* [ ] Focus + X activation
-* [ ] Unified cursor / Focus activation
-* [ ] UI Element abstraction
-* [ ] UI Container / Focus manager
+*  D-pad Focus navigation
+*  Focus + X activation
+*  Unified cursor / Focus activation
+*  UI Element abstraction
+*  UI Container / Focus manager
 
 ### v0.3.x — UI Framework
 
@@ -51,10 +51,6 @@ Release builds are stored under:
 ```text
 releases/
 ```
-
-Current release:
-
-* `v0.2.3` — D-pad Focus navigation
 
 ## Building
 
