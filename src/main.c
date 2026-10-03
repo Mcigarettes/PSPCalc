@@ -40,11 +40,8 @@ static int cursor_mode = 0;
 static int hovered_index = -1;
 
 /*
- * v0.3.1: test UI buttons.
- *
- * element_ptrs exists because UIButton is larger than UIElement,
- * so the array of buttons cannot be handed to UIContainer as
- * a contiguous UIElement array.
+ * v0.3.1: test UI buttons
+ * v0.3.2: buttons carry text; a title UILabel is drawn.
  */
 #define ELEMENT_COUNT 6
 #define ELEMENT_COLS  3
@@ -53,6 +50,13 @@ static UIButton buttons[ELEMENT_COUNT];
 static UIElement *element_ptrs[ELEMENT_COUNT];
 
 static UIContainer container;
+
+static UILabel title_label;
+
+static const char *button_texts[ELEMENT_COUNT] = {
+    "0", "1", "2",
+    "3", "4", "5"
+};
 
 static void init_buttons(void)
 {
@@ -76,8 +80,22 @@ static void init_buttons(void)
             i
         );
 
+        ui_button_set_text(&buttons[i], button_texts[i]);
+
         element_ptrs[i] = &buttons[i].base;
     }
+}
+
+static void init_labels(void)
+{
+    ui_label_init(
+        &title_label,
+        40,
+        12,
+        "PSPCALC",
+        0xFFE0E0FF,
+        2
+    );
 }
 
 /*
@@ -285,6 +303,7 @@ int main(void)
     input_init();
 
     init_buttons();
+    init_labels();
 
     ui_container_init(
         &container,
@@ -304,9 +323,6 @@ int main(void)
             running = 0;
         }
 
-        /*
-         * Focus navigation via UIContainer.
-         */
         if (event.type == UI_EVENT_UP)
         {
             ui_container_move_focus(&container, UI_DIR_UP);
@@ -329,10 +345,6 @@ int main(void)
         }
         else if (event.type == UI_EVENT_ACTIVATE)
         {
-            /*
-             * v0.3.1: activate through UIButton; button owns its
-             * own pressed-state visual feedback.
-             */
             int target;
 
             if (cursor_mode && hovered_index >= 0)
@@ -350,17 +362,11 @@ int main(void)
             }
         }
 
-        /*
-         * v0.2.5: analog switches to cursor mode.
-         */
         if (event.cursor_moved)
         {
             cursor_mode = 1;
         }
 
-        /*
-         * v0.2.5: hit test cursor against buttons.
-         */
         hovered_index = -1;
 
         for (int i = 0; i < ELEMENT_COUNT; i++)
@@ -377,17 +383,11 @@ int main(void)
             }
         }
 
-        /*
-         * v0.3.1: tick button press timers.
-         */
         for (int i = 0; i < ELEMENT_COUNT; i++)
         {
             ui_button_update(&buttons[i]);
         }
 
-        /*
-         * Start a new frame.
-         */
         sceGuStart(GU_DIRECT, list);
 
         sceGuClearColor(0xFF101828);
@@ -402,8 +402,10 @@ int main(void)
         );
 
         /*
-         * v0.2.7: active element.
+         * v0.3.2: title label
          */
+        ui_label_draw(&title_label);
+
         int active_index;
 
         if (cursor_mode && hovered_index >= 0)
@@ -420,17 +422,11 @@ int main(void)
             buttons[i].base.focused = (i == active_index);
         }
 
-        /*
-         * v0.3.1: draw each button through ui_button_draw.
-         */
         for (int i = 0; i < ELEMENT_COUNT; i++)
         {
             ui_button_draw(&buttons[i]);
         }
 
-        /*
-         * Draw the cursor.
-         */
         unsigned int cursor_color = 0xFF8060FF;
 
         if (event.type == UI_EVENT_ACTIVATE)
@@ -450,9 +446,6 @@ int main(void)
             cursor_color
         );
 
-        /*
-         * Finish frame.
-         */
         sceGuFinish();
 
         sceGuSync(

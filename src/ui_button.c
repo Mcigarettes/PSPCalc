@@ -1,6 +1,7 @@
 #include <pspgu.h>
 
 #include "ui_button.h"
+#include "ui_text.h"
 
 typedef struct
 {
@@ -74,7 +75,20 @@ void ui_button_init(
     button->pressed_frames = 0;
     button->pressed_color = 0xFF00FF00;
 
+    button->text = NULL;
+    button->text_color = 0xFFFFFFFF;
+
     button->on_activate = NULL;
+}
+
+void ui_button_set_text(UIButton *button, const char *text)
+{
+    if (!button)
+    {
+        return;
+    }
+
+    button->text = text;
 }
 
 void ui_button_update(UIButton *button)
@@ -124,6 +138,25 @@ void ui_button_draw(const UIButton *button)
         button->base.height,
         color
     );
+
+    /* v0.3.2: centered text */
+    if (button->text)
+    {
+        int scale = 1;
+        int tw = ui_text_width(button->text, scale);
+        int th = ui_text_height(scale);
+
+        int tx = button->base.x + (button->base.width - tw) / 2;
+        int ty = button->base.y + (button->base.height - th) / 2;
+
+        ui_text_draw(
+            tx,
+            ty,
+            button->text,
+            button->text_color,
+            scale
+        );
+    }
 }
 
 void ui_button_activate(UIButton *button)

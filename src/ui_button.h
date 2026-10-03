@@ -5,18 +5,12 @@
 
 /*
  * v0.3.1: UIButton — a UIElement with visual button states.
+ * v0.3.2: buttons carry an optional text label, rendered
+ *         centered via the built-in bitmap font.
  *
  * UIButton specializes UIElement. Its 'base' field MUST remain
  * the first member so that a UIButton* can be safely cast to
  * UIElement*.
- *
- * States:
- *   normal    -> base.focused == 0, pressed == 0, enabled == 1
- *   focused   -> base.focused == 1, pressed == 0
- *   pressed   -> pressed == 1 (short feedback after activate)
- *   disabled  -> base.enabled == 0
- *
- * v0.3.1 does NOT add labels. Text comes in v0.3.2 (UILabel).
  */
 
 #define UI_BUTTON_PRESS_FRAMES 15
@@ -37,6 +31,10 @@ struct UIButton
     /* colors */
     unsigned int pressed_color;
 
+    /* v0.3.2: optional text */
+    const char *text;
+    unsigned int text_color;
+
     /* button-level callback */
     UIButtonOnActivate on_activate;
 };
@@ -49,6 +47,8 @@ void ui_button_init(
     int height,
     int id
 );
+
+void ui_button_set_text(UIButton *button, const char *text);
 
 void ui_button_update(UIButton *button);
 
