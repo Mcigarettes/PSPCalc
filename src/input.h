@@ -13,11 +13,13 @@ typedef enum
     UI_EVENT_LEFT,
     UI_EVENT_RIGHT
 } UIEventType;
+
 typedef struct
 {
     UIEventType type;
     float cursor_x;
     float cursor_y;
+    int cursor_moved;   /* v0.2.5: analog stick caused cursor movement this frame */
 } UIEvent;
 
 void input_init(void);
