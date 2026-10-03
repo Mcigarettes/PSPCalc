@@ -4,36 +4,6 @@ A homebrew calculator for the PlayStation Portable (PSP).
 
 PSPCalc is designed specifically for the PSP's 480×272 display and controller input, with a Material Design 3-inspired visual style adapted for a small screen rather than directly copying a mobile UI.
 
-## Current Status
-
-**Version: v0.2.3**
-
-The current development focus is the input and UI interaction framework.
-
-Implemented:
-
-* 480×272 PSP display
-* Analog stick virtual cursor
-* X button activation
-* ○ button back/cancel event
-* START button exit event
-* Edge detection for button presses
-* D-pad Focus navigation
-* Visual Focus feedback
-* Unified input event system
-
-Current test layout:
-
-```text
-┌────┬────┬────┐
-│  0 │  1 │  2 │
-├────┼────┼────┤
-│  3 │  4 │  5 │
-└────┴────┴────┘
-```
-
-The analog cursor and D-pad Focus are currently independent interaction systems. They will eventually share the same activation mechanism.
-
 ## Development Roadmap
 
 ### v0.2.x — Input & Interaction
