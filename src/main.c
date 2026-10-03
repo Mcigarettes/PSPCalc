@@ -42,6 +42,7 @@ static int hovered_index = -1;
 /*
  * v0.3.1: test UI buttons
  * v0.3.2: buttons carry text; a title UILabel is drawn.
+ * v0.3.3: background rect replaced by UIPanel.
  */
 #define ELEMENT_COUNT 6
 #define ELEMENT_COLS  3
@@ -52,6 +53,8 @@ static UIElement *element_ptrs[ELEMENT_COUNT];
 static UIContainer container;
 
 static UILabel title_label;
+
+static UIPanel main_panel;
 
 static const char *button_texts[ELEMENT_COUNT] = {
     "0", "1", "2",
@@ -96,6 +99,25 @@ static void init_labels(void)
         0xFFE0E0FF,
         2
     );
+}
+
+static void init_panels(void)
+{
+    ui_panel_init(
+        &main_panel,
+        40,
+        35,
+        400,
+        200,
+        0xFF18243A
+    );
+
+    main_panel.draw_border = 1;
+    main_panel.border_color = 0xFF445577;
+
+    ui_panel_set_title(&main_panel, "MAIN");
+    main_panel.title_scale = 2;
+    main_panel.title_color = 0xFFA0C0FF;
 }
 
 /*
@@ -245,7 +267,7 @@ static void init_gu(void)
 
 /*
  * ---------------------------------------------------------
- * Draw rectangle (background / panel / cursor)
+ * Draw rectangle (background / cursor)
  * ---------------------------------------------------------
  */
 
@@ -304,6 +326,7 @@ int main(void)
 
     init_buttons();
     init_labels();
+    init_panels();
 
     ui_container_init(
         &container,
@@ -393,13 +416,10 @@ int main(void)
         sceGuClearColor(0xFF101828);
         sceGuClear(GU_COLOR_BUFFER_BIT);
 
-        draw_rectangle(
-            40,
-            35,
-            400,
-            200,
-            0xFF18243A
-        );
+        /*
+         * v0.3.3: panel replaces the previous inline draw_rectangle.
+         */
+        ui_panel_draw(&main_panel);
 
         /*
          * v0.3.2: title label

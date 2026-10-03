@@ -9,6 +9,7 @@ add_executable(${PROJECT_NAME}
     src/ui_element.c
     src/ui_button.c
     src/ui_label.c
+    src/ui_panel.c
     src/ui_container.c
 )
 
