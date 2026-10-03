@@ -4,6 +4,7 @@ project(PSPCalc)
 
 add_executable(${PROJECT_NAME}
     src/main.c
+    src/input.c
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

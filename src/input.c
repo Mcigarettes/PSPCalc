@@ -1,0 +1,88 @@
+#include <pspctrl.h>
+
+#include "input.h"
+
+#define SCREEN_WIDTH  480
+#define SCREEN_HEIGHT 272
+
+static float cursor_x = 240.0f;
+static float cursor_y = 136.0f;
+
+void input_init(void)
+{
+    sceCtrlSetSamplingCycle(0);
+    sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
+}
+
+UIEvent input_update(void)
+{
+    SceCtrlData pad;
+    UIEvent event;
+
+    event.type = UI_EVENT_NONE;
+    event.cursor_x = cursor_x;
+    event.cursor_y = cursor_y;
+
+    sceCtrlPeekBufferPositive(
+        &pad,
+        1
+    );
+
+
+    /*
+     * Analog stick
+     */
+    float dx = (float)pad.Lx - 128.0f;
+    float dy = (float)pad.Ly - 128.0f;
+
+    /*
+     * Dead zone
+     */
+    if (dx > -15.0f && dx < 15.0f)
+    {
+        dx = 0.0f;
+    }
+
+    if (dy > -15.0f && dy < 15.0f)
+    {
+        dy = 0.0f;
+    }
+
+    /*
+     * Movement speed
+     */
+    cursor_x += dx * 0.08f;
+    cursor_y += dy * 0.08f;
+
+    /*
+     * Keep cursor on screen
+     */
+    if (cursor_x < 10.0f)
+        cursor_x = 10.0f;
+
+    if (cursor_x > SCREEN_WIDTH - 10.0f)
+        cursor_x = SCREEN_WIDTH - 10.0f;
+
+    if (cursor_y < 10.0f)
+        cursor_y = 10.0f;
+
+    if (cursor_y > SCREEN_HEIGHT - 10.0f)
+        cursor_y = SCREEN_HEIGHT - 10.0f;
+
+    event.cursor_x = cursor_x;
+    event.cursor_y = cursor_y;
+
+    if (pad.Buttons & PSP_CTRL_START)
+{
+    event.type = UI_EVENT_EXIT;
+}
+else if (pad.Buttons & PSP_CTRL_CROSS)
+{
+    event.type = UI_EVENT_ACTIVATE;
+}
+else if (pad.Buttons & PSP_CTRL_CIRCLE)
+{
+    event.type = UI_EVENT_BACK;
+}
+    return event;
+}

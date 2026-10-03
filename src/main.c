@@ -1,10 +1,11 @@
 #include <pspkernel.h>
-#include <pspctrl.h>
 #include <pspdisplay.h>
 #include <pspgu.h>
 #include <pspdebug.h>
 
 #include <stdlib.h>
+
+#include "input.h"
 
 /*
  * PSP application information
@@ -34,11 +35,6 @@ static unsigned int __attribute__((aligned(16))) list[262144];
  */
 static volatile int running = 1;
 
-/*
- * Cursor
- */
-static float cursor_x = 240.0f;
-static float cursor_y = 136.0f;
 
 /*
  * ---------------------------------------------------------
@@ -248,89 +244,36 @@ static void draw_rectangle(
 
 int main(void)
 {
-    SceCtrlData pad;
+setup_callbacks();
 
-    setup_callbacks();
+input_init();
 
-    /*
-     * Initialize controller.
-     */
-    sceCtrlSetSamplingCycle(0);
-    sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
+/*
+ * Initialize graphics.
+ */
+init_gu();
+while (running)
+{
+    UIEvent event = input_update();
 
-    /*
-     * Initialize graphics.
-     */
-    init_gu();
-
-    while (running)
+     if (event.type == UI_EVENT_EXIT)
     {
-        /*
-         * Read controller.
-         */
-        sceCtrlPeekBufferPositive(
-            &pad,
-            1
-        );
+        running = 0;
+    }
+    /*
+     * Handle input events.
+     */
 
-        /*
-         * START exits the program.
-         */
-        if (pad.Buttons & PSP_CTRL_START)
-        {
-            running = 0;
-        }
-
-        /*
-         * Analog stick.
-         *
-         * Center is approximately 128.
-         */
-        float dx = (float)pad.Lx - 128.0f;
-        float dy = (float)pad.Ly - 128.0f;
-
-        /*
-         * Dead zone.
-         */
-        if (dx > -15.0f && dx < 15.0f)
-        {
-            dx = 0.0f;
-        }
-
-        if (dy > -15.0f && dy < 15.0f)
-        {
-            dy = 0.0f;
-        }
-
-        /*
-         * Movement speed.
-         */
-        cursor_x += dx * 0.08f;
-        cursor_y += dy * 0.08f;
-
-        /*
-         * Keep cursor on screen.
-         */
-        if (cursor_x < 10.0f)
-            cursor_x = 10.0f;
-
-        if (cursor_x > SCREEN_WIDTH - 10.0f)
-            cursor_x = SCREEN_WIDTH - 10.0f;
-
-        if (cursor_y < 10.0f)
-            cursor_y = 10.0f;
-
-        if (cursor_y > SCREEN_HEIGHT - 10.0f)
-            cursor_y = SCREEN_HEIGHT - 10.0f;
-
-        /*
-         * Start a new frame.
-         */
-        sceGuStart(
-            GU_DIRECT,
-            list
-        );
-
+    /*
+     * Start a new frame.
+     */
+/*
+ * Start a new frame.
+ */
+sceGuStart(
+    GU_DIRECT,
+    list
+);
         /*
          * Background.
          *
@@ -359,14 +302,13 @@ int main(void)
         /*
          * Draw the cursor.
          */
-        draw_rectangle(
-            (int)cursor_x - 8,
-            (int)cursor_y - 8,
-            16,
-            16,
-            0xFF8060FF
-        );
-
+draw_rectangle(
+    (int)event.cursor_x - 8,
+    (int)event.cursor_y - 8,
+    16,
+    16,
+    0xFF8060FF
+);
         /*
          * Finish frame.
          */
