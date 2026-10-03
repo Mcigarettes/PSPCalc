@@ -6,9 +6,22 @@
 /*
  * v0.2.7: Focus / Container layer.
  * v0.3.0: include path changed from ui.h to ui_element.h.
- * v0.3.1: elements is now UIElement ** (array of pointers),
- *         because UIButton is larger than UIElement and
- *         cannot be stored in a contiguous UIElement array.
+ * v0.3.1: elements is now UIElement ** (array of pointers).
+ * v0.3.4: cols field removed. Focus navigation is now
+ *         geometric (based on element centers), not grid-based.
+ *
+ * UIContainer owns:
+ *   - a pointer to an array of UIElement *
+ *   - the current focus index
+ *
+ * It does NOT own:
+ *   - the elements themselves
+ *   - input handling
+ *   - rendering
+ *   - cursor / mouse-style interaction
+ *
+ * UIDirection is a UI-layer concept, deliberately NOT UIEventType,
+ * so the UI layer never depends on the input layer.
  */
 
 typedef enum
@@ -23,15 +36,13 @@ typedef struct
 {
     UIElement **elements;
     int count;
-    int cols;
     int focus_index;
 } UIContainer;
 
 void ui_container_init(
     UIContainer *container,
     UIElement **elements,
-    int count,
-    int cols
+    int count
 );
 
 int ui_container_get_focus_index(const UIContainer *container);
