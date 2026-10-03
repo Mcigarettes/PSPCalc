@@ -7,6 +7,7 @@
 
 #include "input.h"
 #include "ui.h"
+#include "ui_container.h"
 
 /*
  * PSP application information
@@ -34,22 +35,25 @@ static unsigned int __attribute__((aligned(16))) list[262144];
  * Application state
  */
 static volatile int running = 1;
-static int focus_index = 0;
 
 /* v0.2.4: activation feedback */
 static int activated_index = -1;
 static int activated_frames = 0;
 
-/* v0.2.5: cursor mode + hover hit test */
+/* v0.2.5: cursor mode + hover hit test (not yet moved into container) */
 static int cursor_mode = 0;
 static int hovered_index = -1;
 
 /*
  * v0.2.6: test UI elements
+ * v0.2.7: focus state now owned by UIContainer
  */
 #define ELEMENT_COUNT 6
+#define ELEMENT_COLS  3
 
 static UIElement elements[ELEMENT_COUNT];
+
+static UIContainer container;
 
 static void on_element_activate(UIElement *element)
 {
@@ -294,6 +298,13 @@ int main(void)
 
     init_elements();
 
+    ui_container_init(
+        &container,
+        elements,
+        ELEMENT_COUNT,
+        ELEMENT_COLS
+    );
+
     init_gu();
 
     while (running)
@@ -306,38 +317,29 @@ int main(void)
         }
 
         /*
-         * Focus navigation (v0.2.3)
+         * v0.2.7: Focus navigation delegated to UIContainer.
+         *
+         * main.c maps input events to UI-layer direction,
+         * so the UI layer stays independent from input layer.
          */
         if (event.type == UI_EVENT_UP)
         {
-            if (focus_index >= 3)
-            {
-                focus_index -= 3;
-            }
+            ui_container_move_focus(&container, UI_DIR_UP);
             cursor_mode = 0;
         }
         else if (event.type == UI_EVENT_DOWN)
         {
-            if (focus_index < 3)
-            {
-                focus_index += 3;
-            }
+            ui_container_move_focus(&container, UI_DIR_DOWN);
             cursor_mode = 0;
         }
         else if (event.type == UI_EVENT_LEFT)
         {
-            if (focus_index % 3 != 0)
-            {
-                focus_index--;
-            }
+            ui_container_move_focus(&container, UI_DIR_LEFT);
             cursor_mode = 0;
         }
         else if (event.type == UI_EVENT_RIGHT)
         {
-            if (focus_index % 3 != 2)
-            {
-                focus_index++;
-            }
+            ui_container_move_focus(&container, UI_DIR_RIGHT);
             cursor_mode = 0;
         }
         else if (event.type == UI_EVENT_ACTIVATE)
@@ -345,6 +347,7 @@ int main(void)
             /*
              * v0.2.5: unified activation
              * v0.2.6: route through UIElement
+             * v0.2.7: focus_index now read from container
              */
             int target;
 
@@ -354,7 +357,7 @@ int main(void)
             }
             else
             {
-                target = focus_index;
+                target = ui_container_get_focus_index(&container);
             }
 
             if (target >= 0 && target < ELEMENT_COUNT)
@@ -418,7 +421,7 @@ int main(void)
         );
 
         /*
-         * v0.2.6: active element
+         * v0.2.7: active element
          */
         int active_index;
 
@@ -428,7 +431,7 @@ int main(void)
         }
         else
         {
-            active_index = focus_index;
+            active_index = ui_container_get_focus_index(&container);
         }
 
         for (int i = 0; i < ELEMENT_COUNT; i++)
