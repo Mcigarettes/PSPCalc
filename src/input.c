@@ -7,6 +7,7 @@
 
 static float cursor_x = 240.0f;
 static float cursor_y = 136.0f;
+static unsigned int previous_buttons = 0;
 
 void input_init(void)
 {
@@ -28,7 +29,7 @@ UIEvent input_update(void)
         1
     );
 
-
+{
     /*
      * Analog stick
      */
@@ -72,17 +73,22 @@ UIEvent input_update(void)
     event.cursor_x = cursor_x;
     event.cursor_y = cursor_y;
 
-    if (pad.Buttons & PSP_CTRL_START)
+if ((pad.Buttons & PSP_CTRL_START) &&
+    !(previous_buttons & PSP_CTRL_START))
 {
     event.type = UI_EVENT_EXIT;
 }
-else if (pad.Buttons & PSP_CTRL_CROSS)
+else if ((pad.Buttons & PSP_CTRL_CROSS) &&
+         !(previous_buttons & PSP_CTRL_CROSS))
 {
     event.type = UI_EVENT_ACTIVATE;
 }
-else if (pad.Buttons & PSP_CTRL_CIRCLE)
+else if ((pad.Buttons & PSP_CTRL_CIRCLE) &&
+         !(previous_buttons & PSP_CTRL_CIRCLE))
 {
     event.type = UI_EVENT_BACK;
 }
+
+previous_buttons = pad.Buttons;}
     return event;
 }
