@@ -260,6 +260,7 @@ while (running)
     {
         running = 0;
     }
+    
     /*
      * Handle input events.
      */
@@ -302,14 +303,24 @@ sceGuStart(
         /*
          * Draw the cursor.
          */
+unsigned int cursor_color = 0xFF8060FF;
+
+if (event.type == UI_EVENT_ACTIVATE)
+{
+    cursor_color = 0xFF00FF00;
+}
+else if (event.type == UI_EVENT_BACK)
+{
+    cursor_color = 0xFFFF0000;
+}
+
 draw_rectangle(
     (int)event.cursor_x - 8,
     (int)event.cursor_y - 8,
     16,
     16,
-    0xFF8060FF
-);
-        /*
+    cursor_color
+);        /*
          * Finish frame.
          */
         sceGuFinish();
