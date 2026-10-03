@@ -21,7 +21,6 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
 /*
  * GU framebuffer width.
- * PSP VRAM is normally arranged with a 512-pixel buffer width.
  */
 #define BUFFER_WIDTH 512
 
@@ -35,6 +34,10 @@ static unsigned int __attribute__((aligned(16))) list[262144];
  */
 static volatile int running = 1;
 static int focus_index = 0;
+
+/* v0.2.4: activation feedback */
+static int activated_index = -1;
+static int activated_frames = 0;
 
 /*
  * ---------------------------------------------------------
@@ -101,89 +104,46 @@ static void init_gu(void)
     void *framebuffer1;
     void *depthbuffer;
 
-    framebuffer0 =
-        guGetStaticVramBuffer(
-            BUFFER_WIDTH,
-            SCREEN_HEIGHT,
-            GU_PSM_8888
-        );
+    framebuffer0 = guGetStaticVramBuffer(
+        BUFFER_WIDTH, SCREEN_HEIGHT, GU_PSM_8888
+    );
 
-    framebuffer1 =
-        guGetStaticVramBuffer(
-            BUFFER_WIDTH,
-            SCREEN_HEIGHT,
-            GU_PSM_8888
-        );
+    framebuffer1 = guGetStaticVramBuffer(
+        BUFFER_WIDTH, SCREEN_HEIGHT, GU_PSM_8888
+    );
 
-    depthbuffer =
-        guGetStaticVramBuffer(
-            BUFFER_WIDTH,
-            SCREEN_HEIGHT,
-            GU_PSM_4444
-        );
+    depthbuffer = guGetStaticVramBuffer(
+        BUFFER_WIDTH, SCREEN_HEIGHT, GU_PSM_4444
+    );
 
     sceGuInit();
 
     sceGuStart(GU_DIRECT, list);
 
-    sceGuDrawBuffer(
-        GU_PSM_8888,
-        framebuffer0,
-        BUFFER_WIDTH
-    );
+    sceGuDrawBuffer(GU_PSM_8888, framebuffer0, BUFFER_WIDTH);
+    sceGuDispBuffer(SCREEN_WIDTH, SCREEN_HEIGHT, framebuffer1, BUFFER_WIDTH);
+    sceGuDepthBuffer(depthbuffer, BUFFER_WIDTH);
 
-    sceGuDispBuffer(
-        SCREEN_WIDTH,
-        SCREEN_HEIGHT,
-        framebuffer1,
-        BUFFER_WIDTH
-    );
-
-    sceGuDepthBuffer(
-        depthbuffer,
-        BUFFER_WIDTH
-    );
-
-    /*
-     * Set up a 480x272 coordinate system.
-     */
     sceGuOffset(
         2048 - SCREEN_WIDTH / 2,
         2048 - SCREEN_HEIGHT / 2
     );
 
     sceGuViewport(
-        2048,
-        2048,
-        SCREEN_WIDTH,
-        SCREEN_HEIGHT
+        2048, 2048,
+        SCREEN_WIDTH, SCREEN_HEIGHT
     );
 
-    sceGuDepthRange(
-        65535,
-        0
-    );
+    sceGuDepthRange(65535, 0);
 
-    sceGuScissor(
-        0,
-        0,
-        SCREEN_WIDTH,
-        SCREEN_HEIGHT
-    );
-
+    sceGuScissor(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     sceGuEnable(GU_SCISSOR_TEST);
-
     sceGuDisable(GU_DEPTH_TEST);
 
     sceGuFinish();
-
-    sceGuSync(
-        GU_SYNC_FINISH,
-        GU_SYNC_WHAT_DONE
-    );
+    sceGuSync(GU_SYNC_FINISH, GU_SYNC_WHAT_DONE);
 
     sceDisplayWaitVblankStart();
-
     sceGuDisplay(GU_TRUE);
 }
 
@@ -211,9 +171,7 @@ static void draw_rectangle(
 {
     Vertex *vertices;
 
-    vertices = (Vertex *)sceGuGetMemory(
-        2 * sizeof(Vertex)
-    );
+    vertices = (Vertex *)sceGuGetMemory(2 * sizeof(Vertex));
 
     vertices[0].color = color;
     vertices[0].x = x;
@@ -227,9 +185,7 @@ static void draw_rectangle(
 
     sceGuDrawArray(
         GU_SPRITES,
-        GU_COLOR_8888 |
-        GU_VERTEX_16BIT |
-        GU_TRANSFORM_2D,
+        GU_COLOR_8888 | GU_VERTEX_16BIT | GU_TRANSFORM_2D,
         2,
         NULL,
         vertices
@@ -244,164 +200,142 @@ static void draw_rectangle(
 
 int main(void)
 {
-setup_callbacks();
+    setup_callbacks();
+    input_init();
+    init_gu();
 
-input_init();
-
-/*
- * Initialize graphics.
- */
-init_gu();
-while (running)
-{
-    UIEvent event = input_update();
-
-     if (event.type == UI_EVENT_EXIT)
+    while (running)
     {
-        running = 0;
-    }
-    if (event.type == UI_EVENT_UP)
-{
-    if (focus_index >= 3)
-    {
-        focus_index -= 3;
-    }
-}
-else if (event.type == UI_EVENT_DOWN)
-{
-    if (focus_index < 3)
-    {
-        focus_index += 3;
-    }
-}
-else if (event.type == UI_EVENT_LEFT)
-{
-    if (focus_index % 3 != 0)
-    {
-        focus_index--;
-    }
-}
-else if (event.type == UI_EVENT_RIGHT)
-{
-    if (focus_index % 3 != 2)
-    {
-        focus_index++;
-    }
-}
+        UIEvent event = input_update();
 
-    /*
-     * Handle input events.
-     */
+        /* Exit */
+        if (event.type == UI_EVENT_EXIT)
+        {
+            running = 0;
+        }
 
-    /*
-     * Start a new frame.
-     */
-/*
- * Start a new frame.
- */
-sceGuStart(
-    GU_DIRECT,
-    list
-);
-        /*
-         * Background.
-         *
-         * RGBA:
-         * 0xFF101828
-         */
-        sceGuClearColor(
-            0xFF101828
-        );
+        /* Focus navigation (v0.2.3) */
+        if (event.type == UI_EVENT_UP)
+        {
+            if (focus_index >= 3)
+            {
+                focus_index -= 3;
+            }
+        }
+        else if (event.type == UI_EVENT_DOWN)
+        {
+            if (focus_index < 3)
+            {
+                focus_index += 3;
+            }
+        }
+        else if (event.type == UI_EVENT_LEFT)
+        {
+            if (focus_index % 3 != 0)
+            {
+                focus_index--;
+            }
+        }
+        else if (event.type == UI_EVENT_RIGHT)
+        {
+            if (focus_index % 3 != 2)
+            {
+                focus_index++;
+            }
+        }
+        /* v0.2.4: activate focused element */
+        else if (event.type == UI_EVENT_ACTIVATE)
+        {
+            activated_index = focus_index;
+            activated_frames = 15;
+        }
 
-        sceGuClear(
-            GU_COLOR_BUFFER_BIT
-        );
+        /* v0.2.4: tick activation flash timer */
+        if (activated_frames > 0)
+        {
+            activated_frames--;
 
-        /*
-         * Draw a test panel.
-         */
+            if (activated_frames == 0)
+            {
+                activated_index = -1;
+            }
+        }
+
+        /* Draw */
+        sceGuStart(GU_DIRECT, list);
+
+        sceGuClearColor(0xFF101828);
+        sceGuClear(GU_COLOR_BUFFER_BIT);
+
+        draw_rectangle(40, 35, 400, 200, 0xFF18243A);
+
+        int button_x[6] = {
+            100, 200, 300,
+            100, 200, 300
+        };
+
+        int button_y[6] = {
+            80, 80, 80,
+            160, 160, 160
+        };
+
+        for (int i = 0; i < 6; i++)
+        {
+            unsigned int button_color;
+
+            if (i == activated_index)
+            {
+                /* v0.2.4: activated -> green flash */
+                button_color = 0xFF00FF00;
+            }
+            else if (i == focus_index)
+            {
+                /* focused -> purple */
+                button_color = 0xFF8060FF;
+            }
+            else
+            {
+                /* normal */
+                button_color = 0xFF30405A;
+            }
+
+            draw_rectangle(
+                button_x[i],
+                button_y[i],
+                60,
+                40,
+                button_color
+            );
+        }
+
+        /* Cursor */
+        unsigned int cursor_color = 0xFF8060FF;
+
+        if (event.type == UI_EVENT_ACTIVATE)
+        {
+            cursor_color = 0xFF00FF00;
+        }
+        else if (event.type == UI_EVENT_BACK)
+        {
+            cursor_color = 0xFFFF0000;
+        }
+
         draw_rectangle(
-            40,
-            35,
-            400,
-            200,
-            0xFF18243A
+            (int)event.cursor_x - 8,
+            (int)event.cursor_y - 8,
+            16,
+            16,
+            cursor_color
         );
-int button_x[6] = {
-    100, 200, 300,
-    100, 200, 300
-};
 
-int button_y[6] = {
-    80, 80, 80,
-    160, 160, 160
-};
-
-for (int i = 0; i < 6; i++)
-{
-    unsigned int button_color;
-
-    if (i == focus_index)
-    {
-        button_color = 0xFF8060FF;
-    }
-    else
-    {
-        button_color = 0xFF30405A;
-    }
-
-    draw_rectangle(
-        button_x[i],
-        button_y[i],
-        60,
-        40,
-        button_color
-    );
-}
-
-        /*
-         * Draw the cursor.
-         */
-unsigned int cursor_color = 0xFF8060FF;
-
-if (event.type == UI_EVENT_ACTIVATE)
-{
-    cursor_color = 0xFF00FF00;
-}
-else if (event.type == UI_EVENT_BACK)
-{
-    cursor_color = 0xFFFF0000;
-}
-
-draw_rectangle(
-    (int)event.cursor_x - 8,
-    (int)event.cursor_y - 8,
-    16,
-    16,
-    cursor_color
-);        /*
-         * Finish frame.
-         */
         sceGuFinish();
+        sceGuSync(GU_SYNC_FINISH, GU_SYNC_WHAT_DONE);
 
-        sceGuSync(
-            GU_SYNC_FINISH,
-            GU_SYNC_WHAT_DONE
-        );
-
-        /*
-         * Wait for vertical blank.
-         */
         sceDisplayWaitVblankStart();
-
-        /*
-         * Swap buffers.
-         */
         sceGuSwapBuffers();
     }
 
     sceGuTerm();
-
     sceKernelExitGame();
 
     return 0;
