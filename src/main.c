@@ -43,9 +43,9 @@ static int hovered_index = -1;
  * v0.3.1: test UI buttons
  * v0.3.2: buttons carry text; a title UILabel is drawn.
  * v0.3.3: background rect replaced by UIPanel.
+ * v0.3.4: focus navigation is geometric; no grid cols.
  */
 #define ELEMENT_COUNT 6
-#define ELEMENT_COLS  3
 
 static UIButton buttons[ELEMENT_COUNT];
 static UIElement *element_ptrs[ELEMENT_COUNT];
@@ -331,8 +331,7 @@ int main(void)
     ui_container_init(
         &container,
         element_ptrs,
-        ELEMENT_COUNT,
-        ELEMENT_COLS
+        ELEMENT_COUNT
     );
 
     init_gu();
@@ -416,14 +415,8 @@ int main(void)
         sceGuClearColor(0xFF101828);
         sceGuClear(GU_COLOR_BUFFER_BIT);
 
-        /*
-         * v0.3.3: panel replaces the previous inline draw_rectangle.
-         */
         ui_panel_draw(&main_panel);
 
-        /*
-         * v0.3.2: title label
-         */
         ui_label_draw(&title_label);
 
         int active_index;
